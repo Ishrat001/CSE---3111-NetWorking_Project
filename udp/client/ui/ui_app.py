@@ -1,14 +1,21 @@
 import sys
+import os
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QLabel, QPushButton,
     QLineEdit, QVBoxLayout, QHBoxLayout, QMessageBox, QSizePolicy
 )
 from PyQt5.QtCore import Qt
 
+# Add project root to path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from client.network_client import network_client
+
 
 class WelcomeWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.mode = None
         self.init_ui()
         self.apply_styles()
 
@@ -148,18 +155,14 @@ class WelcomeWidget(QWidget):
         self.form.setVisible(True)
         self.mode = "signup"
 
-    # ---------- OK button logic ----------
+   # ---------- OK button logic ----------
     def on_ok_clicked(self):
         username = self.username_edit.text().strip()
-        password = self.password_edit.text().strip()
-
-        if not username or not password:
-            QMessageBox.warning(self, "Error", "Username and password required")
-            return
+        password = self.password_edit.text()
 
         if self.mode == "signup":
             name = self.name_edit.text().strip()
-            confirm = self.confirm_edit.text().strip()
+            confirm = self.confirm_edit.text()
 
             if not name:
                 QMessageBox.warning(self, "Error", "Name required")
@@ -169,22 +172,71 @@ class WelcomeWidget(QWidget):
                 QMessageBox.warning(self, "Error", "Passwords do not match")
                 return
 
-            # 🔴 PLACEHOLDER: SIGN UP SERVER CALL
-            # server_register(name, username, password)
-            QMessageBox.information(self, "Signup",
-                                    "(Placeholder)\nUser registered successfully")
+            if len(password) < 8:
+                QMessageBox.warning(self, "Error", "Password must be at least 8 characters")
+                return
+
+            # ✅ ACTUAL SIGNUP CALL
+            network_client.send_signup_request(
+                name, username, password,
+                callback=self.handle_signup_response
+            )
+            QMessageBox.information(self, "Signup", "Processing registration...")
 
         elif self.mode == "signin":
-            # 🔴 PLACEHOLDER: SIGN IN SERVER CALL
-            # server_login(username, password)
-            QMessageBox.information(self, "Login",
-                                    "(Placeholder)\nLogin successful")
+            if not username or not password:
+                QMessageBox.warning(self, "Error", "Username and password required")
+                return
 
-            # ---- Launch Main Chat UI ----
-            from cChatMainUi import MainChatWindow
-            self.main_window = MainChatWindow()
-            self.main_window.start_with_connection(username, "localhost", 5000)
+            # ✅ ACTUAL LOGIN CALL
+            network_client.send_login_request(
+                username, password,
+                callback=self.handle_login_response
+            )
+            QMessageBox.information(self, "Login", "Authenticating...")
+        else:
+            QMessageBox.warning(self, "Error", "Please select Sign In or Sign Up")
+
+    def handle_signup_response(self, req_type: str, success: bool, message: str):
+        """Called when server responds to signup"""
+        if success:
+            QMessageBox.information(self, "Signup Success", message)
+            # Clear fields
+            self.clear_signup_fields()
+            # Switch to signin mode
+            self.show_signin()
+        else:
+            QMessageBox.warning(self, "Signup Failed", message)
+
+    def handle_login_response(self, req_type: str, success: bool, message: str):
+        """Called when server responds to login"""
+        if success:
+            QMessageBox.information(self, "Login Success", message)
+            # Open main chat window
+            self.open_main_window()
+        else:
+            QMessageBox.warning(self, "Login Failed", message)
+
+    def clear_signup_fields(self):
+        """Clear signup form"""
+        self.name_edit.clear()
+        self.username_edit.clear()
+        self.password_edit.clear()
+        self.confirm_edit.clear()
+
+    def open_main_window(self):
+        """Open the main chat application window"""
+        try:
+            # Try to import MainWindow
+            from client.main_window import MainWindow
+            self.main_window = MainWindow()
             self.main_window.show()
+            self.window().close()  # Close current window
+        except ImportError:
+            QMessageBox.warning(self, "Error", 
+                              "Main chat window not found.\nCreate client/main_window.py")
+        except Exception as e:
+            QMessageBox.warning(self, "Error", f"Cannot open chat: {str(e)}")
 
 
 class MainWindow(QMainWindow):

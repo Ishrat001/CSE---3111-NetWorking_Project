@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import (
     QLineEdit, QVBoxLayout, QHBoxLayout, QMessageBox, QSizePolicy
 )
 from PyQt5.QtCore import Qt
+import socket
 
 
 class WelcomeWidget(QWidget):
@@ -11,7 +12,6 @@ class WelcomeWidget(QWidget):
         super().__init__(parent)
         self.init_ui()
         self.apply_styles()
-
 
     def init_ui(self):
         v = QVBoxLayout()
@@ -80,47 +80,45 @@ class WelcomeWidget(QWidget):
         v.addStretch(2)
         self.setLayout(v)
 
-
     def apply_styles(self):
-        self.setStyleSheet("""
-            QWidget {
-                background-color: #f4f6f8;
-                font-family: Segoe UI;
-                font-size: 14px;
-            }
+            self.setStyleSheet("""
+                QWidget {
+                    background-color: #f4f6f8;
+                    font-family: Segoe UI;
+                    font-size: 14px;
+                }
 
-            QLabel {
-                color: #333333;
-            }
+                QLabel {
+                    color: #333333;
+                }
 
-            QLineEdit {
-                background-color: white;
-                border: 1px solid #cfd4da;
-                border-radius: 6px;
-                padding: 8px;
-            }
+                QLineEdit {
+                    background-color: white;
+                    border: 1px solid #cfd4da;
+                    border-radius: 6px;
+                    padding: 8px;
+                }
 
-            QLineEdit:focus {
-                border: 1px solid #4a90e2;
-            }
+                QLineEdit:focus {
+                    border: 1px solid #4a90e2;
+                }
 
-            QPushButton {
-                background-color: #4a90e2;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                padding: 10px;
-            }
+                QPushButton {
+                    background-color: #4a90e2;
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    padding: 10px;
+                }
 
-            QPushButton:hover {
-                background-color: #357abd;
-            }
+                QPushButton:hover {
+                    background-color: #357abd;
+                }
 
-            QPushButton:pressed {
-                background-color: #2d6da3;
-            }
-        """)
-
+                QPushButton:pressed {
+                    background-color: #2d6da3;
+                }
+            """)
 
 
     # ---------- UI switching ----------
@@ -169,22 +167,55 @@ class WelcomeWidget(QWidget):
                 QMessageBox.warning(self, "Error", "Passwords do not match")
                 return
 
-            # 🔴 PLACEHOLDER: SIGN UP SERVER CALL
-            # server_register(name, username, password)
-            QMessageBox.information(self, "Signup",
-                                    "(Placeholder)\nUser registered successfully")
+            resp = server_signup(name, username, password)
+
+            if resp.startswith("OK"):
+                QMessageBox.information(self, "Signup", "Signup successful")
+            else:
+                QMessageBox.warning(self, "Signup Failed", resp)
+
 
         elif self.mode == "signin":
-            # 🔴 PLACEHOLDER: SIGN IN SERVER CALL
-            # server_login(username, password)
-            QMessageBox.information(self, "Login",
-                                    "(Placeholder)\nLogin successful")
+            username = self.username_edit.text().strip()
+            password = self.password_edit.text().strip()
+            
+            if not username or not password:
+                QMessageBox.warning(self, "Error", "Username and password required")
+                return
+            
+            resp, s = server_login(username, password)
+            
+            if resp.startswith("OK") and s:  
+                from chat_selection_page import DashboardPage
+                self.dashboard = DashboardPage(s, username)
+                self.dashboard.show()
+                self.parent().hide()
 
-            # ---- Launch Main Chat UI ----
-            from cChatMainUi import MainChatWindow
-            self.main_window = MainChatWindow()
-            self.main_window.start_with_connection(username, "localhost", 5000)
-            self.main_window.show()
+            else:
+                QMessageBox.warning(self, "Login Failed", str(resp))
+
+
+def server_signup(full_name, username, password):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect(("localhost", 5000))
+    s.sendall(f"SIGNUP|{full_name}|{username}|{password}\n".encode())
+    resp = s.recv(1024).decode()
+   # s.close()
+    return resp
+
+
+def server_login(username, password):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect(("localhost", 5000))
+    s.sendall(f"LOGIN|{username}|{password}\n".encode())
+    resp = s.recv(1024).decode()
+    # Jodi success hoy, socket return koro
+    if resp.startswith("OK"):
+        return resp, s
+    else:
+       # s.close()
+        return resp, None
+
 
 
 class MainWindow(QMainWindow):

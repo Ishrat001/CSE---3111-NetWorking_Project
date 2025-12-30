@@ -1,0 +1,59 @@
+..........................server.........................
+
+server.py
+├── IMPORTS & CONFIG
+├── DATA STRUCTURES
+│   ├── ClientInfo
+│   ├── AppPacket
+│   ├── ReceiveBuffer
+│   └── SendBuffer
+│
+├── GLOBAL REGISTRIES
+│   ├── clients, groups, senders
+│   └── udp_socket
+│
+├── BUFFER MANAGEMENT CLASSES
+│   ├── ReceiveBuffer
+│   └── SendBuffer
+│
+├── UDP UTILITY FUNCTIONS
+│   ├── send_json_over_udp
+│   └── recv_json_from_udp
+│
+├── SENDER CLASS (TCP Reno) 
+│
+├── SERVER LOGIC FUNCTION
+│   ├── forward_simple_msg()        # Line ~450
+│   ├── forward_to_group()          # Line ~480
+│   ├── notify_file_start()         # Line ~520
+│   ├── forward_app_packet_to_recipient() # Line ~550
+│   ├── dispatch_ack_to_senders()   # Line ~580 
+│   ├── cleanup_finished_senders()  # Line ~610
+│   └── maintenance_loop()          # Line ~630
+│
+├── CLIENT_HANDLER FUNCTION 
+│
+└── MAIN FUNCTION 
+
+
+.....................tcp_chat_project..........................
+
+
+├── server/
+│   ├── server_main.py          # entry point
+│   ├── tcp_server.py           # socket accept, threading
+│   ├── client_handler.py       # per-client thread
+│   ├── reno.py                 # congestion control logic
+│   ├── protocol.py             # message formats
+│   └── db.py                   # SQLite wrapper
+│
+├── client/
+│   ├── main.py                 # entry point
+│   ├── welcome_ui.py           # username + IP
+│   ├── main_chat_ui.py         
+│   ├── cSendShareDownloadUi.py
+│   ├── cMessageViewUi.py
+│   ├── network_client.py       # TCP client + Reno sender
+│   └── protocol.py
+│
+└── README.md
