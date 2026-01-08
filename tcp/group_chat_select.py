@@ -13,8 +13,16 @@ class GroupChatSelectPage(QWidget):
         self.username = username
 
         layout = QVBoxLayout()
+        layout.setSpacing(16)
+        layout.setContentsMargins(40, 40, 40, 40)
 
-        layout.addWidget(QLabel("Select a Group"))
+        title = QLabel("Select a Group")
+        title.setAlignment(Qt.AlignCenter)
+        title.setStyleSheet("""
+            font-size: 18px;
+            font-weight: bold;
+            color: #333333;
+        """)
 
         self.group_list = QListWidget()
         self.group_list.setSelectionMode(QListWidget.SingleSelection)
@@ -22,11 +30,57 @@ class GroupChatSelectPage(QWidget):
         self.join_btn = QPushButton("Join Group")
         self.create_btn = QPushButton("Create New Group")
 
+        self.join_btn.setFixedHeight(36)
+        self.create_btn.setFixedHeight(36)
+
+        layout.addWidget(title)
         layout.addWidget(self.group_list)
         layout.addWidget(self.join_btn)
         layout.addWidget(self.create_btn)
 
         self.setLayout(layout)
+
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #f4f6f8;
+                font-family: Segoe UI;
+                font-size: 14px;
+            }
+
+            QListWidget {
+                background-color: white;
+                border: 1px solid #cfd4da;
+                border-radius: 6px;
+                padding: 4px;
+            }
+
+            QListWidget::item {
+                padding: 8px;
+            }
+
+            QListWidget::item:selected {
+                background-color: #4a90e2;
+                color: white;
+                border-radius: 4px;
+            }
+
+            QPushButton {
+                background-color: #4a90e2;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px;
+            }
+
+            QPushButton:hover {
+                background-color: #357abd;
+            }
+
+            QPushButton:pressed {
+                background-color: #2d6da3;
+            }
+        """)
+
 
         self.create_btn.clicked.connect(self.open_create_group)
         self.join_btn.clicked.connect(self.join_group)

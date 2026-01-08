@@ -13,16 +13,46 @@ class DashboardPage(QWidget):
 
         layout = QVBoxLayout()
         layout.setSpacing(20)
+        layout.setContentsMargins(40, 40, 40, 40)
 
         title = QLabel(f"Welcome {username}, Choose Chat Mode")
         title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet("font-size:18px; font-weight:bold;")
+        title.setStyleSheet("""
+            font-size: 18px;
+            font-weight: bold;
+            color: #333333;
+        """)
 
         self.single_btn = QPushButton("Single Chat")
         self.group_btn = QPushButton("Group Chat")
 
         self.single_btn.setFixedHeight(40)
         self.group_btn.setFixedHeight(40)
+
+        # 🔹 Login page style apply
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #f4f6f8;
+                font-family: Segoe UI;
+                font-size: 14px;
+            }
+
+            QPushButton {
+                background-color: #4a90e2;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px;
+            }
+
+            QPushButton:hover {
+                background-color: #357abd;
+            }
+
+            QPushButton:pressed {
+                background-color: #2d6da3;
+            }
+        """)
 
         layout.addStretch()
         layout.addWidget(title)

@@ -22,6 +22,8 @@ class GroupChatWindow(QWidget):
         self.setWindowTitle(f"Group: {group_name}")
 
         layout = QVBoxLayout()
+        layout.setSpacing(12)
+        layout.setContentsMargins(16, 16, 16, 16)
 
         self.chat_area = QTextBrowser()
         self.chat_area.setOpenExternalLinks(False)
@@ -32,8 +34,12 @@ class GroupChatWindow(QWidget):
         self.message_box.setFixedHeight(80)
 
         btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(10)
         self.send_btn = QPushButton("Send Message")
         self.file_btn = QPushButton("Send File")
+
+        self.send_btn.setFixedHeight(36)
+        self.file_btn.setFixedHeight(36)
 
         btn_layout.addWidget(self.send_btn)
         btn_layout.addWidget(self.file_btn)
@@ -43,6 +49,48 @@ class GroupChatWindow(QWidget):
         layout.addLayout(btn_layout)
 
         self.setLayout(layout)
+
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #f4f6f8;
+                font-family: Segoe UI;
+                font-size: 14px;
+            }
+
+            QTextBrowser {
+                background-color: white;
+                border: 1px solid #cfd4da;
+                border-radius: 6px;
+                padding: 8px;
+            }
+
+            QTextEdit {
+                background-color: white;
+                border: 1px solid #cfd4da;
+                border-radius: 6px;
+                padding: 8px;
+            }
+
+            QTextEdit:focus, QTextBrowser:focus {
+                border: 1px solid #4a90e2;
+            }
+
+            QPushButton {
+                background-color: #4a90e2;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px;
+            }
+
+            QPushButton:hover {
+                background-color: #357abd;
+            }
+
+            QPushButton:pressed {
+                background-color: #2d6da3;
+            }
+        """)
 
         self.send_btn.clicked.connect(self.send_message)
         self.file_btn.clicked.connect(self.send_file)

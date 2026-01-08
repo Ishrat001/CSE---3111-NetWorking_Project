@@ -36,6 +36,48 @@ class SingleChatWindow(QWidget):
         layout.addLayout(btns)
         self.setLayout(layout)
 
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #f4f6f8;
+                font-family: Segoe UI;
+                font-size: 14px;
+            }
+
+            QTextBrowser {
+                background-color: white;
+                border: 1px solid #cfd4da;
+                border-radius: 6px;
+                padding: 8px;
+            }
+
+            QTextEdit {
+                background-color: white;
+                border: 1px solid #cfd4da;
+                border-radius: 6px;
+                padding: 8px;
+            }
+
+            QTextEdit:focus, QTextBrowser:focus {
+                border: 1px solid #4a90e2;
+            }
+
+            QPushButton {
+                background-color: #4a90e2;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 10px;
+            }
+
+            QPushButton:hover {
+                background-color: #357abd;
+            }
+
+            QPushButton:pressed {
+                background-color: #2d6da3;
+            }
+        """)
+
         self.send_btn.clicked.connect(self.send_message)
         self.file_btn.clicked.connect(self.send_file)
 
