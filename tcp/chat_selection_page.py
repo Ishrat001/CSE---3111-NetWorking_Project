@@ -5,9 +5,10 @@ from group_chat_select import GroupChatSelectPage
 
 
 class DashboardPage(QWidget):
-    def __init__(self, sock, username, parent=None):
+    def __init__(self, chat_sock, file_sock, username, parent=None):
         super().__init__(parent)
-        self.sock = sock
+        self.chat_sock = chat_sock
+        self.file_sock = file_sock
         self.username = username
 
         layout = QVBoxLayout()
@@ -36,12 +37,12 @@ class DashboardPage(QWidget):
 
 
     def open_single_chat_select(self):
-        self.single_page = SingleChatSelectPage()
+        self.single_page = SingleChatSelectPage(self.chat_sock, self.username)
         self.single_page.show()
 
         # server থেকে online users আনো
-        self.sock.sendall(b"LIST_ONLINE_USERS\n")
-        resp = self.sock.recv(4096).decode().strip()
+        self.chat_sock.sendall(b"LIST_ONLINE_USERS\n")
+        resp = self.chat_sock.recv(4096).decode().strip()
 
         if resp.startswith("OK|"):
             users = resp.split("|", 1)[1].split(",")
@@ -49,12 +50,12 @@ class DashboardPage(QWidget):
             self.single_page.load_users(users)
 
     def open_group_chat_select(self):
-        self.group_page = GroupChatSelectPage(self.sock, self.username)
+        self.group_page = GroupChatSelectPage(self.chat_sock, self.file_sock, self.username)
         self.group_page.show()
 
         # server থেকে group list আনো
-        self.sock.sendall(b"LIST_GROUPS\n")
-        resp = self.sock.recv(4096).decode().strip()
+        self.chat_sock.sendall(b"LIST_GROUPS\n")
+        resp = self.chat_sock.recv(4096).decode().strip()
 
         if resp.startswith("OK|"):
             self.group_page.group_map = {}

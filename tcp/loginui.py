@@ -183,11 +183,11 @@ class WelcomeWidget(QWidget):
                 QMessageBox.warning(self, "Error", "Username and password required")
                 return
             
-            resp, s = server_login(username, password)
+            resp, chat_sock, file_sock = server_login(username, password)
             
-            if resp.startswith("OK") and s:  
+            if resp.startswith("OK") and chat_sock and file_sock:  
                 from chat_selection_page import DashboardPage
-                self.dashboard = DashboardPage(s, username)
+                self.dashboard = DashboardPage(chat_sock, file_sock, username)
                 self.dashboard.show()
                 self.parent().hide()
 
@@ -196,22 +196,26 @@ class WelcomeWidget(QWidget):
 
 
 def server_signup(full_name, username, password):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect(("localhost", 5000))
-    s.sendall(f"SIGNUP|{full_name}|{username}|{password}\n".encode())
-    resp = s.recv(1024).decode()
+    chat_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    chat_sock.connect(("localhost", 5000))
+    chat_sock.sendall(f"SIGNUP|{full_name}|{username}|{password}\n".encode())
+    file_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    file_sock.connect(("localhost", 5001))
+    resp = chat_sock.recv(1024).decode()
    # s.close()
     return resp
 
 
 def server_login(username, password):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect(("localhost", 5000))
-    s.sendall(f"LOGIN|{username}|{password}\n".encode())
-    resp = s.recv(1024).decode()
+    chat_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    chat_sock.connect(("localhost", 5000))
+    chat_sock.sendall(f"LOGIN|{username}|{password}\n".encode())
+    file_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    file_sock.connect(("localhost", 5001))
+    resp = chat_sock.recv(1024).decode()
     # Jodi success hoy, socket return koro
     if resp.startswith("OK"):
-        return resp, s
+        return resp, chat_sock, file_sock
     else:
        # s.close()
         return resp, None

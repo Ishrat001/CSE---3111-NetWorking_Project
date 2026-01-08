@@ -3,6 +3,7 @@ import socket
 import threading
 import sqlite3
 import hashlib
+db_lock = threading.Lock()
 
 # ================== PATH SETUP ==================
 
@@ -23,7 +24,7 @@ online_users_lock = threading.Lock()
 # ================== DATABASE ==================
 
 def get_db():
-    return sqlite3.connect(DB_PATH, check_same_thread=False)
+    return sqlite3.connect(DB_PATH, check_same_thread=False,  timeout=10)
 
 def init_db():
     db = get_db()
@@ -70,6 +71,27 @@ def init_db():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         group_id INTEGER,
         sender TEXT,
+        file_name TEXT,
+        file_path TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    db.execute("""
+    CREATE TABLE IF NOT EXISTS single_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sender TEXT,
+        receiver TEXT,
+        message TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    db.execute("""
+    CREATE TABLE IF NOT EXISTS single_files (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sender TEXT,
+        receiver TEXT,
         file_name TEXT,
         file_path TEXT,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -165,7 +187,7 @@ def client_thread(conn, addr):
             # elif cmd == "FILE_UPLOAD":
 
             elif cmd == "LIST_GROUPS":
-                cur = db.execute("SELECT group_name FROM groups")
+                cur = db.execute("SELECT id, group_name FROM groups")
                 groups = [f"{row[0]}:{row[1]}" for row in cur.fetchall()]
                 response = "OK|" + ",".join(groups)
 
@@ -221,43 +243,63 @@ def client_thread(conn, addr):
                 group_id = parts[1]
 
                 cur = db.execute("""
-                    SELECT sender, message, timestamp
+                    SELECT 'MSG' AS type, sender, message, timestamp, NULL AS file_id
                     FROM group_messages
                     WHERE group_id = ?
-                    ORDER BY timestamp
-                """, (group_id,))
 
-                msgs = [
-                    f"[{t}] {s}: {m}"
-                    for s, m, t in cur.fetchall()
-                ]
+                    UNION ALL
+
+                    SELECT 'FILE' AS type, sender, file_name, timestamp, id
+                    FROM group_files
+                    WHERE group_id = ?
+
+                    ORDER BY timestamp
+                """, (group_id, group_id))
+
+                msgs = []
+                for msg_type, sender, content, ts, file_id in cur.fetchall():
+                    if msg_type == "MSG":
+                        msgs.append(f"[{ts}] {sender}: {content}")
+                    else:
+                        msgs.append(f"[{ts}] {sender} sent file: {content}|{file_id}")
 
                 response = "OK|" + "||".join(msgs)
+
 
             elif cmd == "SEND_GROUP_MESSAGE":
                 group_id = parts[1]
                 message = parts[2]
 
-                db.execute(
-                    "INSERT INTO group_messages (group_id, sender, message) VALUES (?, ?, ?)",
-                    (group_id, logged_in_user, message)
-                )
+                with db_lock:
+                    db.execute(
+                        "INSERT INTO group_messages (group_id, sender, message) VALUES (?, ?, ?)",
+                        (group_id, logged_in_user, message)
+                    )
                 db.commit()
 
-                response = "OK|Message sent"
+                response = "OK"
 
-
-            elif cmd == "SEND_GROUP_FILE":
-                group_id = parts[1]
-                filename = parts[2]
-
-                db.execute(
-                    "INSERT INTO group_files (group_id, sender, file_name, file_path) VALUES (?, ?, ?, ?)",
-                    (group_id, logged_in_user, filename, filename)
-                )
+            elif cmd == "SEND_SINGLE_MESSAGE":
+                receiver = parts[1]
+                msg = parts[2]
+                with db_lock:
+                    db.execute(
+                        "INSERT INTO single_messages (sender, receiver, message) VALUES (?, ?, ?)",
+                        (logged_in_user, receiver, msg)
+                    )
                 db.commit()
+                response = "OK"
 
-                response = "OK|File sent"
+            elif cmd == "LOAD_SINGLE_MESSAGES":
+                other = parts[1]
+                cur = db.execute(
+                    "SELECT sender, message, timestamp FROM single_messages "
+                    "WHERE (sender=? AND receiver=?) OR (sender=? AND receiver=?) "
+                    "ORDER BY timestamp",
+                    (logged_in_user, other, other, logged_in_user)
+                )
+                msgs = [f"[{ts}] {s}: {m}" for s, m, ts in cur.fetchall()]
+                response = "OK|" + "||".join(msgs)
 
             else:
                 response = "ERR|Unknown command"

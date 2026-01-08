@@ -5,10 +5,11 @@ from group_chat_window import GroupChatWindow
 
 
 class GroupChatSelectPage(QWidget):
-    def __init__(self, sock, username):
+    def __init__(self, chat_sock, file_sock, username):
         super().__init__()
 
-        self.sock = sock
+        self.chat_sock = chat_sock
+        self.file_sock = file_sock
         self.username = username
 
         layout = QVBoxLayout()
@@ -36,8 +37,8 @@ class GroupChatSelectPage(QWidget):
         self.create_page.show()
 
         # server থেকে online users আনো
-        self.sock.sendall(b"LIST_ONLINE_USERS\n")
-        resp = self.sock.recv(4096).decode().strip()
+        self.chat_sock.sendall(b"LIST_ONLINE_USERS\n")
+        resp = self.chat_sock.recv(4096).decode().strip()
 
         if resp.startswith("OK|"):
             users = resp.split("|", 1)[1].split(",")
@@ -55,7 +56,7 @@ class GroupChatSelectPage(QWidget):
         group_name = item.text()
         group_id = self.group_map[group_name]
 
-        self.chat = GroupChatWindow(self.sock, group_id, group_name)
+        self.chat = GroupChatWindow(self.chat_sock, self.file_sock, self.username, group_id, group_name)
         self.chat.show()
         self.chat.load_messages()
 
@@ -71,9 +72,9 @@ class GroupChatSelectPage(QWidget):
         members = ",".join([i.text() for i in items])
 
         msg = f"GROUP_CREATE|{name}|{members}\n"
-        self.sock.sendall(msg.encode())
+        self.chat_sock.sendall(msg.encode())
 
-        resp = self.sock.recv(4096).decode().strip()
+        resp = self.chat_sock.recv(4096).decode().strip()
 
         if resp.startswith("ERR|"):
             QMessageBox.warning(self.create_page, "Error", resp)
@@ -83,7 +84,7 @@ class GroupChatSelectPage(QWidget):
 
             self.create_page.close()
 
-            self.chat = GroupChatWindow(self.sock, group_id, name)
+            self.chat = GroupChatWindow(self, self.chat_sock, self.file_sock, self.username, group_id, name)
             self.chat.show()
             self.chat.load_messages()
 
